@@ -105,26 +105,24 @@ const ChatInterface = ({ conversationId, setCurrentConversation }) => {
   };
 
   return (
-    <div className="flex flex-col h-[600px] bmo-card">
-      {/* Chat Header */}
-      <div className="flex items-center space-x-3 p-4 border-b-2 border-bmo-green">
-        <Bot className="h-6 w-6 text-bmo-green animate-bounce-slow" />
-        <h2 className="text-xl font-bold text-bmo-green font-bmo">
+    <div className="flex flex-col h-[560px] rounded-3xl bg-bmo-screen/70 border border-bmo-shell p-4 shadow-inner">
+      <div className="flex items-center space-x-3 pb-4 border-b border-white/10">
+        <Bot className="h-6 w-6 text-bmo-mint animate-bounce-slow" />
+        <h2 className="text-xl font-bold text-bmo-mint font-bmo">
           Chat with BMO
         </h2>
         {isTyping && (
-          <div className="flex items-center space-x-1 text-bmo-blue">
+          <div className="flex items-center space-x-1 text-bmo-yellow">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm font-pixel">BMO is thinking...</span>
+            <span className="text-sm font-pixel">BMO is processing...</span>
           </div>
         )}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-gray-400 py-8">
-            <Bot className="h-16 w-16 mx-auto mb-4 text-bmo-green animate-pulse-slow" />
+          <div className="text-center text-bmo-mint/70 py-8">
+            <Bot className="h-16 w-16 mx-auto mb-4 text-bmo-mint animate-pulse" />
             <p className="text-lg font-bmo">Hei! I'm BMO, your friendly robot friend!</p>
             <p className="text-sm font-pixel mt-2">Ask me anything - I love to help and chat!</p>
           </div>
@@ -136,22 +134,22 @@ const ChatInterface = ({ conversationId, setCurrentConversation }) => {
             className={`flex ${message.role === 'USER' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg ${
                 message.role === 'USER'
-                  ? 'bg-bmo-blue text-white'
-                  : 'bg-bmo-green text-bmo-dark'
+                  ? 'bg-bmo-yellow/90 text-bmo-dark'
+                  : 'bg-bmo-mint text-bmo-dark'
               }`}
             >
               <div className="flex items-start space-x-2">
                 {message.role === 'ASSISTANT' && (
-                  <Bot className="h-4 w-4 mt-1 flex-shrink-0" />
+                  <Bot className="h-4 w-4 mt-1 flex-shrink-0 text-bmo-shell-dark" />
                 )}
                 {message.role === 'USER' && (
-                  <User className="h-4 w-4 mt-1 flex-shrink-0" />
+                  <User className="h-4 w-4 mt-1 flex-shrink-0 text-bmo-shell-dark" />
                 )}
                 <div className="flex-1">
-                  <p className="text-sm font-bmo">{message.content}</p>
-                  <p className="text-xs opacity-70 mt-1 font-pixel">
+                  <p className="text-sm font-bmo leading-relaxed">{message.content}</p>
+                  <p className="text-xs opacity-70 mt-1 font-pixel text-bmo-dark/70">
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
@@ -162,10 +160,10 @@ const ChatInterface = ({ conversationId, setCurrentConversation }) => {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-bmo-green text-bmo-dark px-4 py-2 rounded-lg">
+            <div className="bg-bmo-mint text-bmo-dark px-4 py-2 rounded-2xl">
               <div className="flex items-center space-x-2">
                 <Bot className="h-4 w-4" />
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin text-bmo-shell-dark" />
                 <span className="text-sm font-bmo">BMO is thinking...</span>
               </div>
             </div>
@@ -175,8 +173,7 @@ const ChatInterface = ({ conversationId, setCurrentConversation }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={sendMessage} className="p-4 border-t-2 border-bmo-green">
+      <form onSubmit={sendMessage} className="pt-4 border-t border-white/10">
         <div className="flex space-x-2">
           <input
             type="text"

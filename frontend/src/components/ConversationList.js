@@ -59,10 +59,9 @@ const ConversationList = ({ currentConversation, setCurrentConversation }) => {
   };
 
   return (
-    <div className="bmo-card h-[600px] flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b-2 border-bmo-green">
-        <h3 className="text-lg font-bold text-bmo-green font-bmo">
+    <div className="h-[560px] rounded-3xl bg-bmo-screen/70 border border-bmo-shell p-4 flex flex-col shadow-inner">
+      <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <h3 className="text-lg font-bold text-bmo-mint font-bmo">
           Conversations
         </h3>
         <button
@@ -74,41 +73,40 @@ const ConversationList = ({ currentConversation, setCurrentConversation }) => {
         </button>
       </div>
 
-      {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto mt-4">
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bmo-green"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bmo-mint"></div>
           </div>
         ) : conversations.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">
-            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-bmo-green" />
+          <div className="text-center text-bmo-mint/70 py-8">
+            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-bmo-mint" />
             <p className="font-bmo">No conversations yet!</p>
             <p className="text-sm font-pixel">Start chatting with BMO!</p>
           </div>
         ) : (
-          <div className="space-y-2 p-2">
+          <div className="space-y-3">
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-bmo-darker ${
+                className={`p-3 rounded-2xl cursor-pointer transition-all duration-200 border ${
                   currentConversation === conversation.id
-                    ? 'bg-bmo-green text-bmo-dark'
-                    : 'bg-bmo-darker text-white hover:border-bmo-green'
+                    ? 'bg-bmo-mint text-bmo-dark border-transparent shadow-lg'
+                    : 'bg-bmo-screen text-white border-white/10 hover:border-bmo-mint/40'
                 }`}
                 onClick={() => setCurrentConversation(conversation.id)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bmo text-sm font-bold truncate">
+                    <h4 className="font-bmo text-sm font-bold truncate uppercase tracking-wide">
                       {conversation.title}
                     </h4>
                     <div className="flex items-center space-x-2 mt-1">
-                      <Clock className="h-3 w-3" />
-                      <span className="text-xs font-pixel">
+                      <Clock className="h-3 w-3 text-bmo-yellow" />
+                      <span className="text-xs font-pixel text-white/70">
                         {formatDate(conversation.updatedAt)}
                       </span>
-                      <span className="text-xs font-pixel">
+                      <span className="text-xs font-pixel text-white/50">
                         ({conversation._count?.messages || 0} messages)
                       </span>
                     </div>
@@ -118,7 +116,7 @@ const ConversationList = ({ currentConversation, setCurrentConversation }) => {
                       e.stopPropagation();
                       deleteConversation(conversation.id);
                     }}
-                    className="ml-2 p-1 hover:bg-red-500 rounded transition-colors"
+                    className="ml-2 p-1 hover:bg-bmo-pink rounded transition-colors"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>

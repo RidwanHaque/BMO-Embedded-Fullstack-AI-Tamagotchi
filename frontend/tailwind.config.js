@@ -5,15 +5,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'bmo-green': '#00ff88',
-        'bmo-blue': '#00aaff',
-        'bmo-purple': '#aa00ff',
-        'bmo-pink': '#ff00aa',
-        'bmo-yellow': '#ffff00',
-        'bmo-orange': '#ff8800',
-        'bmo-red': '#ff0000',
-        'bmo-dark': '#1a1a2e',
-        'bmo-darker': '#16213e',
+        'bmo-shell': '#29b5a2',
+        'bmo-shell-dark': '#1f8f7d',
+        'bmo-screen': '#103b4a',
+        'bmo-mint': '#c9f5ec',
+        'bmo-yellow': '#ffd25f',
+        'bmo-pink': '#ff5f7e',
+        'bmo-dark': '#0a2230',
+        'bmo-darker': '#071a25',
       },
       fontFamily: {
         'bmo': ['Comic Sans MS', 'cursive'],

@@ -4,21 +4,21 @@
 
 @layer base {
   body {
-    @apply bg-bmo-dark text-white font-bmo;
+    @apply bg-bmo-darker text-white font-bmo;
   }
 }
 
 @layer components {
   .bmo-button {
-    @apply bg-bmo-green hover:bg-bmo-blue text-bmo-dark font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95;
+    @apply bg-bmo-yellow text-bmo-dark font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:bg-bmo-pink hover:text-white;
   }
   
   .bmo-input {
-    @apply bg-bmo-darker border-2 border-bmo-green rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-bmo-blue focus:ring-2 focus:ring-bmo-blue;
+    @apply bg-bmo-screen border border-bmo-shell rounded-lg px-4 py-2 text-bmo-mint placeholder-white/40 focus:outline-none focus:border-bmo-yellow;
   }
   
   .bmo-card {
-    @apply bg-bmo-darker border-2 border-bmo-green rounded-lg p-4 shadow-lg;
+    @apply bg-bmo-screen/80 border border-bmo-shell rounded-2xl p-4 shadow-xl;
   }
   
   .bmo-glow {

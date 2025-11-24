@@ -1,22 +1,25 @@
 import React from 'react';
-import { Bot, Zap } from 'lucide-react';
 
 const Header = () => {
   return (
-    <header className="bg-bmo-darker border-b-2 border-bmo-green py-4">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Bot className="h-8 w-8 text-bmo-green animate-bounce-slow" />
-            <h1 className="text-3xl font-bold text-bmo-green font-bmo">
-              BMO Chatbot
-            </h1>
-            <Zap className="h-6 w-6 text-bmo-yellow animate-pulse-slow" />
-          </div>
+    <header className="bmo-face-wrapper">
+      <div className="bmo-face">
+        <div className="bmo-eyes">
+          <span className="bmo-eye" />
+          <span className="bmo-eye" />
         </div>
-        <p className="text-center text-bmo-blue mt-2 font-pixel">
-          Your friendly neighborhood robot from the Land of Ooo!
+        <div className="bmo-mouth" />
+        <h1 className="text-3xl font-bold text-bmo-dark tracking-wide mt-2">
+          Hei! I'm BMO
+        </h1>
+        <p className="text-sm text-bmo-dark/70 font-pixel text-center">
+          Retro game console • Loyal friend • Ready to chat
         </p>
+        <div className="bmo-badges">
+          <span className="bmo-badge">CHAT</span>
+          <span className="bmo-badge">RETRO</span>
+          <span className="bmo-badge">FRIEND</span>
+        </div>
       </div>
     </header>
   );
