@@ -2,6 +2,8 @@
 
 A full-stack chatbot and embedded companion system featuring BMO from Adventure Time, built with modern web technologies and ESP32-based hardware.
 
+![BMO Tamagotchi setup](BMOImage.JPG)
+
 ## Embedded BMO Hardware Companion
 
 In addition to the web chatbot, this project includes a physical BMO-inspired Tamagotchi device built around an ESP32-C6 microcontroller and a secondary ESP32 board with an IMU sensor. The device acts as a small digital companion that displays emotions, plays games, reacts to user input, and manages virtual stats such as happiness and energy using a combination of display graphics, audio feedback, and sensor events.
