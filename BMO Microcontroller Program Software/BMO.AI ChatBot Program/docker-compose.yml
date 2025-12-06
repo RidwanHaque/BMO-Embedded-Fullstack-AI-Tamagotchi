@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bmo_postgres
+    environment:
+      POSTGRES_DB: bmo_chatbot
+      POSTGRES_USER: bmo_user
+      POSTGRES_PASSWORD: bmo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bmo_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bmo_backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://bmo_user:bmo_password@postgres:5432/bmo_chatbot
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - bmo_network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bmo_frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - bmo_network
+
+volumes:
+  postgres_data:
+
+networks:
+  bmo_network:
+    driver: bridge

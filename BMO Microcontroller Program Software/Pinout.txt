@@ -1,0 +1,23 @@
+===== UART for uLCD =====
+LCD_TX (ESP->LCD)   = GPIO 17
+LCD_RX (LCD->ESP)   = GPIO 16
+LCD_RESET           = GPIO 4
+
+===== Nav Switch =====
+NAV_UP              = GPIO 11
+NAV_DOWN            = GPIO 12
+NAV_LEFT            = GPIO 13
+NAV_RIGHT           = GPIO 14
+NAV_CENTER          = GPIO 15
+
+===== Push Button =====
+BUTTON              = GPIO 5
+
+===== Future RGB LED =====
+LED_R               = GPIO 6
+LED_G               = GPIO 7
+LED_B               = GPIO 8
+
+===== Future I2C IMU =====
+SDA                 = GPIO 18
+SCL                 = GPIO 19

@@ -1,0 +1,116 @@
+.app-background {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #33c7b3 0%, #0b1f27 40%, #06141b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.bmo-shell {
+  width: min(1100px, 95vw);
+  background: #29b5a2;
+  border-radius: 40px;
+  border: 8px solid #1d8676;
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.08),
+    0 25px 60px rgba(0, 0, 0, 0.35);
+  padding: 1.5rem;
+  position: relative;
+}
+
+.bmo-screen {
+  background: #103b4a;
+  border-radius: 30px;
+  padding: 2rem;
+  border: 6px solid #1a495a;
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.4);
+}
+
+.bmo-face-wrapper {
+  background: linear-gradient(145deg, #c9f5ec, #a7e5d8);
+  border-radius: 25px;
+  border: 4px solid #1a495a;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.bmo-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.bmo-eyes {
+  display: flex;
+  gap: 2.5rem;
+}
+
+.bmo-eye {
+  width: 14px;
+  height: 14px;
+  background: #0b1f27;
+  border-radius: 50%;
+  box-shadow: 0 3px #56cbbc;
+}
+
+.bmo-mouth {
+  width: 50px;
+  height: 18px;
+  border-radius: 50px/25px;
+  border: 3px solid #0b1f27;
+  border-top-color: transparent;
+  background: transparent;
+}
+
+.bmo-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.bmo-badge {
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  background: rgba(16, 59, 74, 0.1);
+  border: 2px solid #1a495a;
+  color: #1a495a;
+}
+
+.bmo-controls {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0f2f3c;
+  font-weight: bold;
+  letter-spacing: 0.2em;
+}
+
+.bmo-dpad,
+.bmo-happy-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.bmo-dpad span,
+.bmo-happy-buttons span {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: rgba(15, 47, 60, 0.35);
+  border: 2px solid rgba(15, 47, 60, 0.7);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1);
+}
+
+.bmo-happy-buttons span {
+  border-radius: 50%;
+}

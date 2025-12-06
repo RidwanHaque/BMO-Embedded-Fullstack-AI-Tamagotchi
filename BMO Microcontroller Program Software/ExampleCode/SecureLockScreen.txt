@@ -1,0 +1,420 @@
+#include "ICM_20948.h"
+#include <Wire.h>
+#include <Adafruit_NeoPixel.h>
+#include "Adafruit_MPR121.h"
+#include "Goldelox_Serial_4DLib.h"
+#include "Goldelox_Const4D.h"
+
+// Pin definitions
+#define SDA_PIN 6     // GPIO6 - I2C Data (shared by IMU and Keypad)
+#define SCL_PIN 7     // GPIO7 - I2C Clock (shared by IMU and Keypad)  
+#define RGB_LED_PIN 8 // GPIO8 - Onboard RGB LED
+#define RESETLINE 4   // Display reset line
+
+// Device setup - ALL ON SAME I2C BUS
+ICM_20948_I2C myICM;
+Adafruit_MPR121 cap = Adafruit_MPR121();
+Adafruit_NeoPixel pixels(1, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
+
+// Display setup
+#define DisplaySerial Serial1
+Goldelox_Serial_4DLib Display(&DisplaySerial);
+
+// Color definitions
+#define COLOR_WHITE    pixels.Color(255, 255, 255)
+#define COLOR_RED      pixels.Color(255, 0, 0)
+#define COLOR_GREEN    pixels.Color(0, 255, 0)
+#define COLOR_BLUE     pixels.Color(0, 0, 255)
+#define COLOR_YELLOW   pixels.Color(255, 255, 0)
+
+// Keypad mapping
+const char* keys[12] = {
+  "0", "1", "2",     // Electrodes 0, 1, 2
+  "3", "4", "5",     // Electrodes 3, 4, 5  
+  "6", "7", "8",     // Electrodes 6, 7, 8
+  "9", "ENTER", "DEL" // Electrodes 9, 10, 11
+};
+
+// Lock screen variables
+String passcode = "0031";  // Your ESP32 board number
+String userInput = "";
+int currentStep = 0; // 0 = number entry, 1 = tilt sequence
+bool isLocked = true;
+String tiltSequence = "";
+String requiredTilts = "FBL"; // Forward, Backward, Left
+
+// IMU variables
+#define TILT_THRESHOLD 25.0
+float smoothAccelX = 0, smoothAccelY = 0, smoothAccelZ = 0;
+float baselineMagnitude = 0;
+bool calibrated = false;
+
+// Touch variables
+uint16_t lasttouched = 0;
+uint16_t currtouched = 0;
+
+// Tilt detection variables
+unsigned long lastTiltTime = 0;
+String lastTilt = "";
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+  Serial.println("=== SECURE PHONE LOCK SCREEN ===");
+  
+  // Initialize RGB LED
+  pixels.begin();
+  pixels.setBrightness(50);
+  pixels.setPixelColor(0, COLOR_RED);  // Start locked (red)
+  pixels.show();
+  
+  // Initialize single I2C bus for ALL devices
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(400000);
+  
+  // Initialize display
+  pinMode(RESETLINE, OUTPUT);
+  digitalWrite(RESETLINE, 0);
+  delay(100);
+  digitalWrite(RESETLINE, 1);
+  delay(3000);
+  
+  DisplaySerial.begin(9600, SERIAL_8N1, 21, 22);
+  Display.TimeLimit4D = 5000;
+  Display.gfx_Cls();
+  
+  // Initialize IMU on shared I2C bus
+  bool imuReady = false;
+  while (!imuReady) {
+    myICM.begin(Wire, 1);
+    if (myICM.status == ICM_20948_Stat_Ok) {
+      imuReady = true;
+      Serial.println("IMU initialized on I2C bus!");
+    } else {
+      Serial.println("IMU init failed, retrying...");
+      delay(500);
+    }
+  }
+  
+  // Initialize capacitive keypad on shared I2C bus  
+  if (!cap.begin(0x5A, &Wire)) {
+    Serial.println("Keypad not found on I2C bus!");
+    while (1);
+  } else {
+    Serial.println("Keypad initialized on I2C bus!");
+  }
+  
+  cap.setAutoconfig(true);
+  for (uint8_t i = 0; i < 12; i++) {
+    cap.setThresholds(30, 15);
+  }
+  
+  // Calibrate IMU baseline
+  Serial.println("Calibrating IMU... keep still!");
+  delay(2000);
+  
+  float magSum = 0;
+  int samples = 50;
+  for (int i = 0; i < samples; i++) {
+    if (myICM.dataReady()) {
+      myICM.getAGMT();
+      float accelX = myICM.accX();
+      float accelY = myICM.accY();
+      float accelZ = myICM.accZ();
+      float magnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
+      magSum += magnitude;
+    }
+    delay(50);
+  }
+  baselineMagnitude = magSum / samples;
+  calibrated = true;
+  
+  Serial.println("System ready!");
+  Serial.println("Passcode: " + passcode + " + Forward-Backward-Left tilts");
+  Serial.println("\n=== TILT DIRECTION DEBUG INFO ===");
+  Serial.println("Forward (F): Tilt board toward you");
+  Serial.println("Backward (B): Tilt board away from you");
+  Serial.println("Left (L): Tilt left side down");
+  Serial.println("Required sequence: F-B-L");
+  Serial.println("=====================================\n");
+  
+  // Display initial locked screen
+  updateDisplay();
+}
+
+void loop() {
+  // Handle keypad input
+  handleKeypadInput();
+  
+  // Handle IMU tilt detection (only during tilt sequence phase)
+  if (currentStep == 1) {
+    handleTiltInput();
+  }
+  
+  delay(50);
+}
+
+void handleKeypadInput() {
+  currtouched = cap.touched();
+  
+  for (uint8_t i = 0; i < 12; i++) {
+    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i))) {
+      String key = keys[i];
+      Serial.println("Key pressed: " + key);
+      
+      if (currentStep == 0) { // Number entry phase
+        if (key == "ENTER") {
+          if (userInput == passcode) {
+            currentStep = 1; // Move to tilt sequence
+            userInput = ""; // Clear for tilt display
+            Serial.println("\n*** NUMBERS CORRECT! ***");
+            Serial.println("Now perform tilts: Forward → Backward → Left");
+            Serial.println("Watch the debug output below for tilt detection:");
+            updateDisplay();
+          } else {
+            // Wrong passcode
+            userInput = "";
+            Serial.println("❌ Wrong passcode! Try again.");
+            updateDisplay();
+          }
+        } else if (key == "DEL") {
+          if (userInput.length() > 0) {
+            userInput = userInput.substring(0, userInput.length() - 1);
+            updateDisplay();
+          }
+        } else if (key.length() == 1) { // Single digit
+          if (userInput.length() < 4) {
+            userInput += key;
+            updateDisplay();
+          }
+        }
+      }
+    }
+  }
+  
+  lasttouched = currtouched;
+}
+
+void handleTiltInput() {
+  if (!myICM.dataReady() || !calibrated) return;
+  
+  myICM.getAGMT();
+  
+  // Get accelerometer values
+  float accelX = myICM.accX();
+  float accelY = myICM.accY();
+  float accelZ = myICM.accZ();
+  
+  // Simple smoothing
+  smoothAccelX = (smoothAccelX * 0.8) + (accelX * 0.2);
+  smoothAccelY = (smoothAccelY * 0.8) + (accelY * 0.2);
+  smoothAccelZ = (smoothAccelZ * 0.8) + (accelZ * 0.2);
+  
+  // Calculate tilt angles
+  float tiltForwardBack = atan2(smoothAccelY, smoothAccelZ) * 180.0 / PI;
+  float tiltLeftRight = atan2(smoothAccelX, smoothAccelZ) * 180.0 / PI;
+  
+  // REAL-TIME TILT DEBUG - Show current tilt angles every few loops
+  static int debugCounter = 0;
+  debugCounter++;
+  if (debugCounter >= 10) { // Print every 10 loops (~0.5 seconds)
+    debugCounter = 0;
+    Serial.print("📐 Tilt angles - Forward/Back: ");
+    Serial.print(tiltForwardBack, 1);
+    Serial.print("° | Left/Right: ");
+    Serial.print(tiltLeftRight, 1);
+    Serial.print("° | ");
+    
+    // Show which direction would be detected
+    String potentialTilt = "NONE";
+    if (abs(tiltForwardBack) > TILT_THRESHOLD) {
+      if (tiltForwardBack > 0) {
+        potentialTilt = "FORWARD";
+      } else {
+        potentialTilt = "BACKWARD";
+      }
+    } else if (abs(tiltLeftRight) > TILT_THRESHOLD) {
+      if (tiltLeftRight < 0) {
+        potentialTilt = "LEFT";
+      } else {
+        potentialTilt = "RIGHT";
+      }
+    }
+    Serial.println("Detecting: " + potentialTilt);
+  }
+  
+  // Detect significant tilt with timing to prevent multiple detections
+  unsigned long currentTime = millis();
+  if (currentTime - lastTiltTime > 1000) { // 1 second between tilt detections
+    
+    String currentTilt = "";
+    String directionName = "";
+    
+    if (abs(tiltForwardBack) > TILT_THRESHOLD) {
+      if (tiltForwardBack > 0) {
+        currentTilt = "F"; // Forward
+        directionName = "FORWARD";
+      } else {
+        currentTilt = "B"; // Backward  
+        directionName = "BACKWARD";
+      }
+    } else if (abs(tiltLeftRight) > TILT_THRESHOLD) {
+      if (tiltLeftRight < 0) { // Note: reversed for your IMU
+        currentTilt = "L"; // Left
+        directionName = "LEFT";
+      } else {
+        directionName = "RIGHT (not used)";
+      }
+    }
+    
+    if (currentTilt != "" && currentTilt != lastTilt) {
+      tiltSequence += currentTilt;
+      lastTilt = currentTilt;
+      lastTiltTime = currentTime;
+      
+      Serial.println("\n🎯 *** TILT REGISTERED: " + directionName + " (" + currentTilt + ") ***");
+      Serial.println("✅ Sequence so far: " + tiltSequence + " (need: " + requiredTilts + ")");
+      
+      updateDisplay();
+      
+      // Check if sequence is complete
+      if (tiltSequence.length() >= 3) {
+        if (tiltSequence == requiredTilts) {
+          // UNLOCK SUCCESS!
+          isLocked = false;
+          pixels.setPixelColor(0, COLOR_GREEN);
+          pixels.show();
+          Serial.println("\n🔓 *** PHONE UNLOCKED! *** 🔓");
+          Serial.println("🎉 Correct sequence completed: " + tiltSequence);
+          updateDisplay();
+        } else {
+          // Wrong tilt sequence - reset
+          Serial.println("\n❌ Wrong tilt sequence: " + tiltSequence + " (expected: " + requiredTilts + ")");
+          Serial.println("🔄 Resetting lock screen...");
+          resetLockScreen();
+        }
+      }
+    }
+  }
+}
+
+// Function to draw arrows on display (+5 EXTRA CREDIT)
+void drawArrow(int x, int y, char direction) {
+  int arrowSize = 8;
+  
+  switch(direction) {
+    case 'F': // Forward arrow (↑)
+      Display.gfx_Line(x, y + arrowSize, x, y, WHITE);           // Vertical line
+      Display.gfx_Line(x, y, x - 3, y + 3, WHITE);               // Left diagonal
+      Display.gfx_Line(x, y, x + 3, y + 3, WHITE);               // Right diagonal
+      break;
+      
+    case 'B': // Backward arrow (↓)
+      Display.gfx_Line(x, y, x, y + arrowSize, WHITE);           // Vertical line
+      Display.gfx_Line(x, y + arrowSize, x - 3, y + arrowSize - 3, WHITE); // Left diagonal
+      Display.gfx_Line(x, y + arrowSize, x + 3, y + arrowSize - 3, WHITE); // Right diagonal
+      break;
+      
+    case 'L': // Left arrow (←)
+      Display.gfx_Line(x + arrowSize, y, x, y, WHITE);           // Horizontal line
+      Display.gfx_Line(x, y, x + 3, y - 3, WHITE);               // Top diagonal
+      Display.gfx_Line(x, y, x + 3, y + 3, WHITE);               // Bottom diagonal
+      break;
+  }
+}
+
+void updateDisplay() {
+  Display.gfx_Cls(); // Clear screen completely first
+  delay(10); // Small delay to ensure clear completes
+  
+  if (isLocked) {
+    // Red text for locked state
+    Display.txt_FGcolour(RED);
+    Display.txt_MoveCursor(1, 0);    // Top line, column 0
+    Display.print("PHONE LOCKED");
+    
+    if (currentStep == 0) {
+      // Number entry phase - much wider spacing
+      Display.txt_MoveCursor(2, 2);  // Line 2, clear gap
+      Display.print("Enter Code:");
+      
+      Display.txt_MoveCursor(4, 4);  // Line 4, clear gap
+      Display.print("Code: ");
+      
+      // Show actual entered digits (no asterisks)
+      String displayText = userInput;
+      for (int i = displayText.length(); i < 4; i++) {
+        displayText += "_";  // Show remaining spaces
+      }
+      Display.print(displayText);
+      
+    } else if (currentStep == 1) {
+      // Tilt sequence phase - much wider spacing 
+      Display.txt_MoveCursor(0, 2);  // Line 2
+      Display.print("Tilt Mode:");
+      
+      Display.txt_MoveCursor(0, 4);  // Line 4
+      Display.print("Need: F-B-L");
+      
+      Display.txt_MoveCursor(0, 6);  // Line 6
+      Display.print("Done: ");
+      Display.print(tiltSequence);
+      
+      // Add padding for remaining tilts
+      String remainingDisplay = tiltSequence;
+      for (int i = remainingDisplay.length(); i < 3; i++) {
+        remainingDisplay += "_";
+      }
+      
+      Display.txt_MoveCursor(0, 8);  // Line 8
+      Display.print("Progress:");
+      Display.txt_MoveCursor(0, 10); // Line 10
+      Display.print(remainingDisplay);
+      
+      // EXTRA CREDIT: Draw arrows for completed tilts (+5 points)
+      int startX = 10;
+      int startY = 100;
+      for (int i = 0; i < tiltSequence.length() && i < 3; i++) {
+        char tilt = tiltSequence.charAt(i);
+        drawArrow(startX + (i * 20), startY, tilt);
+      }
+      
+      // Show required sequence with arrows
+      int reqX = 10;
+      int reqY = 110;
+      for (int i = 0; i < requiredTilts.length(); i++) {
+        char tilt = requiredTilts.charAt(i);
+        if (i < tiltSequence.length()) {
+          Display.txt_FGcolour(GREEN); // Completed tilts in green
+        } else {
+          Display.txt_FGcolour(RED);   // Remaining tilts in red
+        }
+        drawArrow(reqX + (i * 25), reqY, tilt);
+      }
+    }
+    
+  } else {
+    // Green text for unlocked state - very clear positioning
+    Display.txt_FGcolour(GREEN);
+    Display.txt_MoveCursor(3, 3);  // Line 3, slightly indented
+    Display.print("PHONE");
+    
+    Display.txt_MoveCursor(5, 5);  // Line 5, left aligned
+    Display.print("UNLOCKED!");
+    
+    Display.txt_MoveCursor(7, 7);  // Line 7, slightly indented
+    Display.print("Welcome!");
+  }
+}
+
+void resetLockScreen() {
+  currentStep = 0;
+  userInput = "";
+  tiltSequence = "";
+  isLocked = true;
+  lastTilt = "";
+  pixels.setPixelColor(0, COLOR_RED);
+  pixels.show();
+  updateDisplay();
+}
